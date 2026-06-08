@@ -1,9 +1,14 @@
 require('dotenv').config();
+const mongoose = require('mongoose');
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/campus_intelligence').then(() => console.log('✅ Connected to MongoDB')).catch((err) => console.error('❌ MongoDB connection error:', err.message));
+
 
 app.use(cors());
 app.use(express.json());
