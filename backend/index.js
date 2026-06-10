@@ -1,19 +1,25 @@
 require('dotenv').config();
-const mongoose = require('mongoose');
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
+
+// Import route modules
 const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/campus_intelligence').then(() => console.log('✅ Connected to MongoDB')).catch((err) => console.error('❌ MongoDB connection error:', err.message));
-
-
 app.use(cors());
 app.use(express.json());
+
+// Connect to MongoDB
+mongoose
+  .connect(process.env.MONGO_URI || 'mongodb://localhost:27017/campus_intelligence')
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch((err) => console.error('❌ MongoDB connection error:', err.message));
+
+// Mount auth & chat routes
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
 
@@ -43,6 +49,17 @@ const tools = [
         day: { type: 'string', description: 'The day of the week (e.g., monday, tuesday).' }
       },
       required: ['day']
+    }
+  },
+  {
+    name: 'query_events',
+    description: 'Search for upcoming campus events, fests, hackathons, workshops, and sports tournaments.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search term for finding events (e.g., hackathon, sports, cultural).' }
+      },
+      required: ['query']
     }
   }
 ];
@@ -75,6 +92,9 @@ app.post('/api/chat', async (req, res) => {
       } else if (name === 'query_cafeteria') {
         const cafRes = await fetch(`http://localhost:4002/api/menu?day=${args.day}`);
         mcpResponse = await cafRes.json();
+      } else if (name === 'query_events') {
+        const evtRes = await fetch(`http://localhost:4003/api/events?q=${encodeURIComponent(args.query)}`);
+        mcpResponse = await evtRes.json();
       }
 
       // Return tool response to LLM
