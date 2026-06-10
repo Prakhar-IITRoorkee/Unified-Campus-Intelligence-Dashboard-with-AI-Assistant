@@ -4,6 +4,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -14,6 +15,7 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/campus_inte
 app.use(cors());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
+app.use('/api/chats', chatRoutes);
 
 // Initialize Google Gen AI
 const { GoogleGenAI } = require('@google/genai');
