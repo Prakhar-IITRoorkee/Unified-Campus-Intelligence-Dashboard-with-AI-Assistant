@@ -8,7 +8,6 @@ const PORT = process.env.PORT || 4003;
 app.use(cors());
 app.use(express.json());
 
-// Mock campus events data
 const events = [
   {
     id: 1,
@@ -62,10 +61,6 @@ const events = [
   },
 ];
 
-/**
- * GET /api/events
- * Returns all events; supports optional ?q= query to filter by title, club, or description.
- */
 app.get('/api/events', (req, res) => {
   try {
     const query = req.query.q?.toLowerCase();

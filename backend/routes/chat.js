@@ -4,13 +4,8 @@ const auth = require('../middleware/auth');
 
 const router = express.Router();
 
-// All routes in this file are protected
 router.use(auth);
 
-/**
- * GET /
- * Return all chat sessions for the logged-in user, sorted newest first.
- */
 router.get('/', async (req, res) => {
   try {
     const chats = await Chat.find({ userId: req.user.id }).sort({ updatedAt: -1 });
@@ -21,10 +16,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-/**
- * POST /
- * Create a new chat session.
- */
 router.post('/', async (req, res) => {
   try {
     const { title, messages } = req.body;
@@ -42,10 +33,6 @@ router.post('/', async (req, res) => {
   }
 });
 
-/**
- * PUT /:id
- * Add a message to an existing chat.
- */
 router.put('/:id', async (req, res) => {
   try {
     const { message } = req.body;
@@ -79,10 +66,6 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-/**
- * DELETE /:id
- * Delete a chat session.
- */
 router.delete('/:id', async (req, res) => {
   try {
     const chat = await Chat.findOneAndDelete({

@@ -3,7 +3,6 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 
-// Import route modules
 const authRoutes = require('./routes/auth');
 const chatRoutes = require('./routes/chat');
 
@@ -13,21 +12,17 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-// Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI || 'mongodb://localhost:27017/campus_intelligence')
   .then(() => console.log('✅ Connected to MongoDB'))
   .catch((err) => console.error('❌ MongoDB connection error:', err.message));
 
-// Mount auth & chat routes
 app.use('/api/auth', authRoutes);
 app.use('/api/chats', chatRoutes);
 
-// Initialize Google Gen AI
 const { GoogleGenAI } = require('@google/genai');
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || 'dummy_key' });
 
-// Define MCP Tools
 const tools = [
   {
     name: 'query_library',
@@ -61,21 +56,50 @@ const tools = [
       },
       required: ['query']
     }
+  },
+  {
+    name: 'query_directory',
+    description: 'Search the faculty directory for professors, emails, offices, and hours.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Name of the professor or department.' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'query_academics',
+    description: 'Search for courses, credits, and prerequisites.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Course name or code.' }
+      },
+      required: ['query']
+    }
   }
 ];
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, history = [] } = req.body;
     
     if (process.env.GEMINI_API_KEY === 'dummy_key' || !process.env.GEMINI_API_KEY) {
-       // Mock response when API key is missing
+       
        return res.json({ reply: `Mock AI: I received your message "${message}". In production, I would use tool calling to contact the MCP servers.` });
     }
 
+    const contents = history.map(msg => ({
+      role: msg.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.text }]
+    }));
+
+    contents.push({ role: 'user', parts: [{ text: message }] });
+
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: message,
+        contents: contents,
         config: { tools: [{ functionDeclarations: tools }] }
     });
 
@@ -84,8 +108,7 @@ app.post('/api/chat', async (req, res) => {
     if (funcCall) {
       const { name, args } = funcCall;
       let mcpResponse = {};
-      
-      // Route to respective MCP Microservice
+
       if (name === 'query_library') {
         const libRes = await fetch(`http://localhost:4001/api/books?q=${args.query}`);
         mcpResponse = await libRes.json();
@@ -95,16 +118,23 @@ app.post('/api/chat', async (req, res) => {
       } else if (name === 'query_events') {
         const evtRes = await fetch(`http://localhost:4003/api/events?q=${encodeURIComponent(args.query)}`);
         mcpResponse = await evtRes.json();
+      } else if (name === 'query_directory') {
+        const dirRes = await fetch(`http://localhost:4004/api/directory?q=${encodeURIComponent(args.query)}`);
+        mcpResponse = await dirRes.json();
+      } else if (name === 'query_academics') {
+        const acadRes = await fetch(`http://localhost:4005/api/academics?q=${encodeURIComponent(args.query)}`);
+        mcpResponse = await acadRes.json();
       }
 
-      // Return tool response to LLM
+      const finalContents = [
+        ...contents,
+        { role: 'model', parts: [{ functionCall: funcCall }] },
+        { role: 'user', parts: [{ functionResponse: { name, response: { result: mcpResponse } } }] }
+      ];
+
       const finalResponse = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: [
-            { role: 'user', parts: [{ text: message }] },
-            { role: 'model', parts: [{ functionCall: funcCall }] },
-            { role: 'user', parts: [{ functionResponse: { name, response: mcpResponse } }] }
-        ]
+        contents: finalContents
       });
       
       return res.json({ reply: finalResponse.text });

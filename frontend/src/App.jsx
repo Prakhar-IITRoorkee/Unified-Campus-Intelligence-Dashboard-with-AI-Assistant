@@ -2,12 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import './App.css';
-import { Bot, Send, User, BookOpen, Coffee, Calendar, Server, LogOut, Menu, Plus, MessageSquare, X } from 'lucide-react';
+import { Bot, Send, User, BookOpen, Coffee, Calendar, Server, LogOut, Menu, Plus, MessageSquare, X , Users, GraduationCap } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import { useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 
-/* ─── Protected Route Wrapper ─── */
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
   if (loading) {
@@ -20,11 +20,12 @@ const ProtectedRoute = ({ children }) => {
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 };
 
-/* ─── Dashboard ─── */
+const WELCOME_MESSAGE = "Hello! I'm your Unified Campus AI. 👋\n\nHere are a few things you can ask me about:\n- Professors phone number\n- Professors email\n- Professors office hours\n- Professors office number\n- Cafeteria menu\n- Upcoming campus events\n- Event details, location, and time\n- Library book availability\n- Course credits\n- Course prerequisites";
+
 const Dashboard = () => {
   const { user, token, logout } = useAuth();
   const [messages, setMessages] = useState([
-    { sender: 'bot', text: "Hello! I'm your Unified Campus AI. Ask me about library books or today's cafeteria menu." }
+    { sender: 'bot', text: WELCOME_MESSAGE }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -37,7 +38,11 @@ const Dashboard = () => {
   const scrollToBottom = () => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   useEffect(scrollToBottom, [messages]);
 
-  /* Load chat history */
+  const handleQuickPrompt = (promptText) => {
+    setInput(promptText);
+    setSidebarOpen(false);
+  };
+
   useEffect(() => {
     const fetchChats = async () => {
       try {
@@ -52,7 +57,6 @@ const Dashboard = () => {
     if (token) fetchChats();
   }, [token]);
 
-  /* Create new chat */
   const createNewChat = async () => {
     try {
       const res = await axios.post('http://localhost:4000/api/chats',
@@ -61,25 +65,23 @@ const Dashboard = () => {
       );
       setChats(prev => [res.data, ...prev]);
       setActiveChatId(res.data._id);
-      setMessages([{ sender: 'bot', text: "Hello! I'm your Unified Campus AI. Ask me about library books or today's cafeteria menu." }]);
+      setMessages([{ sender: 'bot', text: WELCOME_MESSAGE }]);
       setChatHistoryOpen(false);
     } catch (err) {
       console.error('Failed to create chat:', err);
     }
   };
 
-  /* Load a specific chat */
   const loadChat = (chat) => {
     setActiveChatId(chat._id);
     setMessages(
       chat.messages && chat.messages.length > 0
         ? chat.messages
-        : [{ sender: 'bot', text: "Hello! I'm your Unified Campus AI. Ask me about library books or today's cafeteria menu." }]
+        : [{ sender: 'bot', text: WELCOME_MESSAGE }]
     );
     setChatHistoryOpen(false);
   };
 
-  /* Delete a chat */
   const deleteChat = async (e, chatId) => {
     e.stopPropagation();
     try {
@@ -89,14 +91,13 @@ const Dashboard = () => {
       setChats(prev => prev.filter(c => c._id !== chatId));
       if (activeChatId === chatId) {
         setActiveChatId(null);
-        setMessages([{ sender: 'bot', text: "Hello! I'm your Unified Campus AI. Ask me about library books or today's cafeteria menu." }]);
+        setMessages([{ sender: 'bot', text: WELCOME_MESSAGE }]);
       }
     } catch (err) {
       console.error('Failed to delete chat:', err);
     }
   };
 
-  /* Send message */
   const sendMessage = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -106,7 +107,6 @@ const Dashboard = () => {
     setInput('');
     setLoading(true);
 
-    /* If no active chat, create one first */
     let currentChatId = activeChatId;
     if (!currentChatId) {
       try {
@@ -122,7 +122,6 @@ const Dashboard = () => {
       }
     }
 
-    /* Save user message */
     if (currentChatId) {
       try {
         await axios.put(`http://localhost:4000/api/chats/${currentChatId}`,
@@ -135,11 +134,13 @@ const Dashboard = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:4000/api/chat', { message: userMsg });
+      const response = await axios.post('http://localhost:4000/api/chat', { 
+        message: userMsg,
+        history: messages
+      });
       const botReply = response.data.reply;
       setMessages(prev => [...prev, { sender: 'bot', text: botReply }]);
 
-      /* Save bot response */
       if (currentChatId) {
         try {
           await axios.put(`http://localhost:4000/api/chats/${currentChatId}`,
@@ -159,10 +160,10 @@ const Dashboard = () => {
 
   return (
     <div className="app-container">
-      {/* Mobile overlay */}
+      {}
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
 
-      {/* Mobile hamburger */}
+      {}
       <button className="hamburger-btn" onClick={() => setSidebarOpen(!sidebarOpen)}>
         {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -173,9 +174,11 @@ const Dashboard = () => {
         </div>
         <ul className="nav-links">
           <li className="active"><Server size={20} /> Dashboard</li>
-          <li><BookOpen size={20} /> Library MCP</li>
-          <li><Coffee size={20} /> Cafeteria MCP</li>
-          <li><Calendar size={20} /> Events MCP</li>
+          <li onClick={() => handleQuickPrompt("Is 'Clean Code' available in the library?")}><BookOpen size={20} /> Library MCP</li>
+          <li onClick={() => handleQuickPrompt("What is the cafeteria menu for today?")}><Coffee size={20} /> Cafeteria MCP</li>
+          <li onClick={() => handleQuickPrompt("What events are happening on campus this week?")}><Calendar size={20} /> Events MCP</li>
+          <li onClick={() => handleQuickPrompt("What is Professor Sharma's email?")}><Users size={20} /> Directory MCP</li>
+          <li onClick={() => handleQuickPrompt("How many credits is Data Structures?")}><GraduationCap size={20} /> Academics MCP</li>
         </ul>
         <div className="sidebar-bottom">
           <button className="logout-btn" onClick={logout}>
@@ -194,21 +197,10 @@ const Dashboard = () => {
           <p>Real-time data aggregated via Model Context Protocol</p>
         </header>
 
-        <section className="dashboard-grid">
-          <div className="card glass-effect">
-            <h3>Active MCP Connections</h3>
-            <div className="status-indicator online">Library Server (Port 4001)</div>
-            <div className="status-indicator online">Cafeteria Server (Port 4002)</div>
-            <div className="status-indicator online">Events Server (Port 4003)</div>
-          </div>
-          <div className="card hero-card glass-effect">
-            <h2>Decentralized Data. Unified Interface.</h2>
-            <p>Instead of a monolithic database, data is fetched live from independent microservices using tool-calling.</p>
-          </div>
-        </section>
+
 
         <section className="chat-section">
-          {/* Chat History Panel */}
+          {}
           <div className={`chat-history-panel glass-effect ${chatHistoryOpen ? 'open' : ''}`}>
             <div className="chat-history-header">
               <h3><MessageSquare size={18} /> History</h3>
@@ -237,7 +229,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Main Chat */}
+          {}
           <div className="chat-container glass-effect">
             <div className="chat-header">
               <button className="chat-history-toggle" onClick={() => setChatHistoryOpen(!chatHistoryOpen)}>
@@ -252,7 +244,9 @@ const Dashboard = () => {
             <div className="chat-messages">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`message ${msg.sender}`}>
-                  <div className="message-content">{msg.text}</div>
+                  <div className="message-content">
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  </div>
                 </div>
               ))}
               {loading && <div className="message bot"><div className="message-content loading">Routing query to MCP servers...</div></div>}
@@ -277,7 +271,6 @@ const Dashboard = () => {
   );
 };
 
-/* ─── App Router ─── */
 function App() {
   return (
     <Routes>
