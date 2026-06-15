@@ -30,7 +30,7 @@ const tools = [
     parameters: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'The title or author of the book to search for.' }
+        query: { type: 'string', description: 'A single concise keyword from the book title or author. Do not pass conversational phrases.' }
       },
       required: ['query']
     }
@@ -52,7 +52,7 @@ const tools = [
     parameters: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Search term for finding events (e.g., hackathon, sports, cultural).' }
+        query: { type: 'string', description: 'A specific concise search term (e.g., "hackathon", "sports"). If the user asks for general upcoming events, pass an empty string "" to fetch all events.' }
       },
       required: ['query']
     }
@@ -63,7 +63,7 @@ const tools = [
     parameters: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Name of the professor or department.' }
+        query: { type: 'string', description: 'ONLY the concise last name of the professor (e.g. "sharma", NOT "professor sharma" or "sharma\'s") or department name.' }
       },
       required: ['query']
     }
@@ -74,7 +74,7 @@ const tools = [
     parameters: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Course name or code.' }
+        query: { type: 'string', description: 'ONLY the strict course code (e.g., "CS101", "CS202") or exact course name. Do not include words like "prerequisites".' }
       },
       required: ['query']
     }
@@ -109,20 +109,26 @@ app.post('/api/chat', async (req, res) => {
       const { name, args } = funcCall;
       let mcpResponse = {};
 
+      const libraryUrl = process.env.MCP_LIBRARY_URL || 'http://localhost:4001';
+      const cafeteriaUrl = process.env.MCP_CAFETERIA_URL || 'http://localhost:4002';
+      const eventsUrl = process.env.MCP_EVENTS_URL || 'http://localhost:4003';
+      const directoryUrl = process.env.MCP_DIRECTORY_URL || 'http://localhost:4004';
+      const academicsUrl = process.env.MCP_ACADEMICS_URL || 'http://localhost:4005';
+
       if (name === 'query_library') {
-        const libRes = await fetch(`http://localhost:4001/api/books?q=${args.query}`);
+        const libRes = await fetch(`${libraryUrl}/api/books?q=${args.query}`);
         mcpResponse = await libRes.json();
       } else if (name === 'query_cafeteria') {
-        const cafRes = await fetch(`http://localhost:4002/api/menu?day=${args.day}`);
+        const cafRes = await fetch(`${cafeteriaUrl}/api/menu?day=${args.day}`);
         mcpResponse = await cafRes.json();
       } else if (name === 'query_events') {
-        const evtRes = await fetch(`http://localhost:4003/api/events?q=${encodeURIComponent(args.query)}`);
+        const evtRes = await fetch(`${eventsUrl}/api/events?q=${encodeURIComponent(args.query)}`);
         mcpResponse = await evtRes.json();
       } else if (name === 'query_directory') {
-        const dirRes = await fetch(`http://localhost:4004/api/directory?q=${encodeURIComponent(args.query)}`);
+        const dirRes = await fetch(`${directoryUrl}/api/directory?q=${encodeURIComponent(args.query)}`);
         mcpResponse = await dirRes.json();
       } else if (name === 'query_academics') {
-        const acadRes = await fetch(`http://localhost:4005/api/academics?q=${encodeURIComponent(args.query)}`);
+        const acadRes = await fetch(`${academicsUrl}/api/academics?q=${encodeURIComponent(args.query)}`);
         mcpResponse = await acadRes.json();
       }
 

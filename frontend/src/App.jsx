@@ -46,7 +46,8 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchChats = async () => {
       try {
-        const res = await axios.get('http://localhost:4000/api/chats', {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const res = await axios.get(`${API_URL}/api/chats`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setChats(res.data);
@@ -59,7 +60,8 @@ const Dashboard = () => {
 
   const createNewChat = async () => {
     try {
-      const res = await axios.post('http://localhost:4000/api/chats',
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const res = await axios.post(`${API_URL}/api/chats`,
         { title: `Chat ${new Date().toLocaleString()}` },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -85,7 +87,8 @@ const Dashboard = () => {
   const deleteChat = async (e, chatId) => {
     e.stopPropagation();
     try {
-      await axios.delete(`http://localhost:4000/api/chats/${chatId}`, {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      await axios.delete(`${API_URL}/api/chats/${chatId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setChats(prev => prev.filter(c => c._id !== chatId));
@@ -110,7 +113,8 @@ const Dashboard = () => {
     let currentChatId = activeChatId;
     if (!currentChatId) {
       try {
-        const res = await axios.post('http://localhost:4000/api/chats',
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        const res = await axios.post(`${API_URL}/api/chats`,
           { title: userMsg.substring(0, 40) },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -124,7 +128,8 @@ const Dashboard = () => {
 
     if (currentChatId) {
       try {
-        await axios.put(`http://localhost:4000/api/chats/${currentChatId}`,
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+        await axios.put(`${API_URL}/api/chats/${currentChatId}`,
           { sender: 'user', text: userMsg },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -134,7 +139,8 @@ const Dashboard = () => {
     }
 
     try {
-      const response = await axios.post('http://localhost:4000/api/chat', { 
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      const response = await axios.post(`${API_URL}/api/chat`, { 
         message: userMsg,
         history: messages
       });
@@ -143,7 +149,8 @@ const Dashboard = () => {
 
       if (currentChatId) {
         try {
-          await axios.put(`http://localhost:4000/api/chats/${currentChatId}`,
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+          await axios.put(`${API_URL}/api/chats/${currentChatId}`,
             { sender: 'bot', text: botReply },
             { headers: { Authorization: `Bearer ${token}` } }
           );

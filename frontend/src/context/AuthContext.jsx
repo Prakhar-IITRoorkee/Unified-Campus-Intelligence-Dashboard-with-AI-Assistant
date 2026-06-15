@@ -18,7 +18,8 @@ export const AuthProvider = ({ children }) => {
     const validateToken = async () => {
       if (token) {
         try {
-          const res = await axios.get('http://localhost:4000/api/auth/me', {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+          const res = await axios.get(`${API_URL}/api/auth/me`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           setUser(res.data);
@@ -34,7 +35,8 @@ export const AuthProvider = ({ children }) => {
   }, [token]);
 
   const login = async (email, password) => {
-    const res = await axios.post('http://localhost:4000/api/auth/login', { email, password });
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const res = await axios.post(`${API_URL}/api/auth/login`, { email, password });
     const { token: newToken, user: userData } = res.data;
     localStorage.setItem('campus_token', newToken);
     setToken(newToken);
@@ -43,7 +45,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const register = async (name, email, password) => {
-    const res = await axios.post('http://localhost:4000/api/auth/register', { name, email, password });
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+    const res = await axios.post(`${API_URL}/api/auth/register`, { name, email, password });
     const { token: newToken, user: userData } = res.data;
     localStorage.setItem('campus_token', newToken);
     setToken(newToken);
