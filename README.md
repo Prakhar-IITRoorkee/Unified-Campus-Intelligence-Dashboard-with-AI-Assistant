@@ -1,7 +1,7 @@
 # Unified Campus Intelligence Dashboard with AI Assistant
 
 ## 🚀 Deployed Demo
-**[Insert Deployed Link Here]**
+**[https://sdfkvnj.netlify.app/](https://sdfkvnj.netlify.app/)**
 
 ## 📖 Project Description
 The **Unified Campus Intelligence Dashboard** is a state-of-the-art AI-powered web platform designed to seamlessly integrate various campus services into a single, intuitive interface. 
